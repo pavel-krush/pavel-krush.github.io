@@ -1,1 +1,124 @@
-hello world
+<!doctype html>
+<html lang="en">
+	<head>
+		<title>Send message using Pushwoosh API</title>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1"/>
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous"/>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+	</head>
+	<body class="m-2">
+		<form id="send-message">
+			<h3>Authorization</h3>
+			<div class="form-group col-10 row">
+				<div class="col-8">
+					<label for="api_token">API Token</label>
+					<input type="text" class="form-control" id="api_token" placeholder="API Token is required" />
+					<small id="api_token_help" class="form-text text-muted"></small>
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="application">Application code</label>
+				<div class="col-2">
+					<input type="text" class="form-control" id="application" placeholder="XXXXX-XXXXX" />
+				</div>
+				<small id="application_help" class="form-text text-muted"></small>
+			</div>
+			<hr/>
+			<h3>Content</h3>
+			<div class="form-group row">
+				<div class="col-4">
+					<label for="title">Title</label>
+					<div>
+						<input type="text" class="form-control" id="title" />
+					</div>
+					<small id="title_help" class="form-text text-muted"></small>
+				</div>
+				<div class="col-4">
+					<label for="subtitle">Subtitle</label>
+					<div>
+						<input type="text" class="form-control" id="subtitle" />
+					</div>
+					<small id="subtitle_help" class="form-text text-muted"></small>
+				</div>
+			</div>
+			<div class="form-group col-8">
+				<label for="message">Message</label>
+				<textarea class="form-control" id="message" rows="3"></textarea>
+				<small id="message_help" class="form-text text-muted"></small>
+			</div>
+			<hr/>
+			<button type="submit" class="btn btn-primary">Woosh</button>
+		</form>
+		<span id="request"></span>
+		<span id="response"></span>
+		<script>
+			function saveApiToken() {
+				localStorage.setItem("api_token", $("#api_token").val())
+			}
+
+			function saveApplication() {
+				localStorage.setItem("application", $("#application").val())
+			}
+
+			$("#api_token").change(saveApiToken)
+			$("#api_token").keyup(saveApiToken)
+
+			$("#application").change(saveApplication)
+			$("#application").keyup(saveApplication)
+
+			$(document).ready(()=>{
+				$("#api_token").val(localStorage.getItem("api_token"))
+				$("#application").val(localStorage.getItem("application"))
+				$("#send-message").submit((e)=> {
+					e.preventDefault()
+					let payload = {
+						"content": {
+							"localized_content": {
+								"en": {
+									"ios": {
+										"title": $("#title").val(),
+										"subtitle": $("#subtitle").val(),
+										"body": $("#message").val()
+									}
+								}
+							}
+						}
+					}
+
+					let schedule = {"after": "0s"}
+					let appCode = $("#application").val()
+					let req = {
+						"segment": {
+							"schedule": schedule,
+							"application": appCode,
+							"expression": "A(\"" + appCode + "\")",
+							"payload": payload
+						}
+					}
+
+					$('#request').html("request: <pre>" + JSON.stringify(req, null, 2) + "</pre>")
+					$.ajax({
+						type: "POST",
+						url: "https://api.pushwoosh.com/messaging/v2/notify",
+						dataType: 'json',
+						data: JSON.stringify(req),
+						contentType: "application/json",
+						headers: {
+							"Authorization": "Token " + $("#api_token").val()
+						},
+						crossDomain: true,
+						success: (data, status, xhr) => {
+							console.log(xhr)
+							$('#response').html("response: <pre>" + JSON.stringify(data, null, 2) + "</pre>")
+						},
+						error: (err) => {
+							$('#response').html("error: <pre>" + JSON.stringify(err, null, 2) + "</pre>")
+						}
+                    })
+                })
+			});
+		</script>
+	</body>
+</html>
